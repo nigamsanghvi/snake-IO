@@ -4,11 +4,12 @@
 #include <vector>
 #include <ctime>
 #include <cstdlib>
+#include <fstream>
 
 using namespace std;
 
-const int WIDTH = 20;   // smaller size since emojis take more space
-const int HEIGHT = 10;
+const int WIDTH = 20;   // Increased board width
+const int HEIGHT = 10;  // Increased board height
 
 enum Direction { STOP = 0, LEFT, RIGHT, UP, DOWN };
 
@@ -28,6 +29,7 @@ private:
     vector<string> fruitSymbols = {"🍎", "🍒", "🍉", "🥭", "🍓"};
     Direction dir;
     int score;
+    int highScore;
     bool gameOver;
 
     // ---------- Console Helpers ----------
@@ -47,6 +49,25 @@ private:
         GetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
         cursorInfo.bVisible = false;
         SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
+    }
+
+    // ---------- High Score ----------
+    void LoadHighScore() {
+        ifstream file("highscore.txt");
+        if (file.is_open()) {
+            file >> highScore;
+            file.close();
+        } else {
+            highScore = 0;
+        }
+    }
+
+    void SaveHighScore() {
+        ofstream file("highscore.txt");
+        if (file.is_open()) {
+            file << highScore;
+            file.close();
+        }
     }
 
     // ---------- Game Logic ----------
@@ -83,6 +104,7 @@ public:
         dir = STOP;
         score = 0;
         gameOver = false;
+        LoadHighScore();
         GenerateFruit();
         HideCursor();
     }
@@ -91,9 +113,9 @@ public:
         system("cls");
         SetColor(10);
         cout << "\n\n";
-        cout << "        ╔════════════════════════════╗\n";
-        cout << "        ║      🐍 SNAKE GAME 🐍       ║\n";
-        cout << "        ╚════════════════════════════╝\n\n";
+        cout << "        ╔════════════════════════════════════╗\n";
+        cout << "        ║          🐍  SNAKE GAME  🐍         ║\n";
+        cout << "        ╚════════════════════════════════════╝\n\n";
 
         SetColor(14);
         cout << "Controls:\n";
@@ -110,6 +132,7 @@ public:
         SetColor(13);
         cout << " to grow and score!\n\n";
         SetColor(11);
+        cout << "Current High Score: " << highScore << "\n\n";
         cout << "Press any key to start...\n";
         SetColor(7);
         _getch();
@@ -150,6 +173,10 @@ public:
 
         if (newHead == fruit) {
             score += 10;
+            if (score > highScore) {
+                highScore = score;
+                SaveHighScore();
+            }
             GenerateFruit();
         } else {
             snake.pop_back();
@@ -211,7 +238,9 @@ public:
         SetColor(11);
         cout << "Score: " << score << "   ";
         SetColor(13);
-        cout << "Length: " << snake.size() << "\n";
+        cout << "Length: " << snake.size() << "   ";
+        SetColor(14);
+        cout << "High Score: " << highScore << "\n";
         SetColor(7);
         cout << "Controls: W/A/S/D to move | X to quit\n";
     }
@@ -222,12 +251,13 @@ public:
         system("cls");
         SetColor(12);
         cout << "\n\n";
-        cout << "        ╔════════════════════════════╗\n";
-        cout << "        ║        💀 GAME OVER 💀      ║\n";
-        cout << "        ╚════════════════════════════╝\n\n";
+        cout << "        ╔════════════════════════════════════╗\n";
+        cout << "        ║           💀 GAME OVER 💀           ║\n";
+        cout << "        ╚════════════════════════════════════╝\n\n";
         SetColor(11);
         cout << "         Final Score: " << score << endl;
         cout << "         Snake Length: " << snake.size() << endl;
+        cout << "         Highest Score: " << highScore << endl;
         SetColor(7);
         cout << "\nPress any key to exit...\n";
         _getch();
@@ -242,7 +272,7 @@ int main() {
         game.Input();
         game.Logic();
         game.Draw();
-        Sleep(150);
+        Sleep(120);
     }
 
     game.GameOverScreen();
