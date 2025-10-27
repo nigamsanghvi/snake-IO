@@ -7,8 +7,8 @@
 
 using namespace std;
 
-const int WIDTH = 40;
-const int HEIGHT = 20;
+const int WIDTH = 20;   // smaller size since emojis take more space
+const int HEIGHT = 10;
 
 enum Direction { STOP = 0, LEFT, RIGHT, UP, DOWN };
 
@@ -16,7 +16,7 @@ struct Point {
     int x, y;
 };
 
-bool operator==(const Point& p1, const Point& p2) {
+bool operator==(const Point &p1, const Point &p2) {
     return p1.x == p2.x && p1.y == p2.y;
 }
 
@@ -24,10 +24,13 @@ class SnakeGame {
 private:
     vector<Point> snake;
     Point fruit;
+    string currentFruit;
+    vector<string> fruitSymbols = {"🍎", "🍒", "🍉", "🥭", "🍓"};
     Direction dir;
     int score;
     bool gameOver;
 
+    // ---------- Console Helpers ----------
     void SetColor(int color) {
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
     }
@@ -46,45 +49,71 @@ private:
         SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
     }
 
+    // ---------- Game Logic ----------
     void GenerateFruit() {
-        bool validPosition;
+        bool valid;
         do {
-            validPosition = true;
+            valid = true;
             fruit.x = rand() % WIDTH;
             fruit.y = rand() % HEIGHT;
-            
-            for (size_t i = 0; i < snake.size(); i++) {
-                if (snake[i] == fruit) {
-                    validPosition = false;
-                    break;
-                }
-            }
-        } while (!validPosition);
+            for (auto &s : snake)
+                if (s == fruit) valid = false;
+        } while (!valid);
+
+        currentFruit = fruitSymbols[rand() % fruitSymbols.size()];
     }
 
     bool CheckCollision(Point p) {
         if (p.x < 0 || p.x >= WIDTH || p.y < 0 || p.y >= HEIGHT)
             return true;
-        
-        for (size_t i = 1; i < snake.size(); i++) {
+
+        for (size_t i = 1; i < snake.size(); i++)
             if (snake[i] == p)
                 return true;
-        }
+
         return false;
     }
 
 public:
     SnakeGame() {
+        SetConsoleOutputCP(65001); // Enable emoji support
         srand(time(0));
-        Point start;
-        start.x = WIDTH / 2;
-        start.y = HEIGHT / 2;
+        Point start = {WIDTH / 2, HEIGHT / 2};
         snake.push_back(start);
         dir = STOP;
         score = 0;
         gameOver = false;
         GenerateFruit();
         HideCursor();
+    }
+
+    void ShowStartScreen() {
+        system("cls");
+        SetColor(10);
+        cout << "\n\n";
+        cout << "        ╔════════════════════════════╗\n";
+        cout << "        ║      🐍 SNAKE GAME 🐍       ║\n";
+        cout << "        ╚════════════════════════════╝\n\n";
+
+        SetColor(14);
+        cout << "Controls:\n";
+        SetColor(7);
+        cout << "  W - Move Up\n";
+        cout << "  S - Move Down\n";
+        cout << "  A - Move Left\n";
+        cout << "  D - Move Right\n";
+        cout << "  X - Quit Game\n\n";
+        SetColor(13);
+        cout << "Eat the fruits ";
+        SetColor(12);
+        cout << "🍎 🍉 🍓";
+        SetColor(13);
+        cout << " to grow and score!\n\n";
+        SetColor(11);
+        cout << "Press any key to start...\n";
+        SetColor(7);
+        _getch();
+        system("cls");
     }
 
     void Input() {
@@ -104,12 +133,12 @@ public:
         if (dir == STOP) return;
 
         Point newHead = snake[0];
-        
+
         switch (dir) {
-            case LEFT: newHead.x--; break;
+            case LEFT:  newHead.x--; break;
             case RIGHT: newHead.x++; break;
-            case UP: newHead.y--; break;
-            case DOWN: newHead.y++; break;
+            case UP:    newHead.y--; break;
+            case DOWN:  newHead.y++; break;
         }
 
         if (CheckCollision(newHead)) {
@@ -129,67 +158,62 @@ public:
 
     void Draw() {
         SetCursorPosition(0, 0);
-        
-        // Top border
-        SetColor(14);
-        cout << "+";
-        for (int i = 0; i < WIDTH; i++) cout << "-";
-        cout << "+" << endl;
 
-        // Game area
+        // Top Border
+        SetColor(14);
+        cout << "╔";
+        for (int i = 0; i < WIDTH; i++) cout << "══";
+        cout << "╗\n";
+
+        // Game Grid
         for (int y = 0; y < HEIGHT; y++) {
             SetColor(14);
-            cout << "|";
-            
+            cout << "║";
+
             for (int x = 0; x < WIDTH; x++) {
-                Point current;
-                current.x = x;
-                current.y = y;
-                
-                bool isSnakePart = false;
+                Point current = {x, y};
                 bool isHead = (snake[0] == current);
-                
-                if (!isHead) {
-                    for (size_t i = 1; i < snake.size(); i++) {
-                        if (snake[i] == current) {
-                            isSnakePart = true;
-                            break;
-                        }
+                bool isBody = false;
+
+                for (size_t i = 1; i < snake.size(); i++) {
+                    if (snake[i] == current) {
+                        isBody = true;
+                        break;
                     }
                 }
-                
+
                 if (isHead) {
                     SetColor(10);
-                    cout << "O";
-                } else if (isSnakePart) {
+                    cout << "🟩";
+                } else if (isBody) {
                     SetColor(2);
-                    cout << "o";
+                    cout << "🟢";
                 } else if (fruit == current) {
                     SetColor(12);
-                    cout << "@";
+                    cout << currentFruit;
                 } else {
                     SetColor(7);
-                    cout << " ";
+                    cout << "  ";
                 }
             }
-            
+
             SetColor(14);
-            cout << "|" << endl;
+            cout << "║\n";
         }
 
-        // Bottom border
+        // Bottom Border
         SetColor(14);
-        cout << "+";
-        for (int i = 0; i < WIDTH; i++) cout << "-";
-        cout << "+" << endl;
+        cout << "╚";
+        for (int i = 0; i < WIDTH; i++) cout << "══";
+        cout << "╝\n";
 
-        // Score and controls
+        // Info bar
         SetColor(11);
-        cout << "Score: " << score << "  |  ";
+        cout << "Score: " << score << "   ";
         SetColor(13);
-        cout << "Length: " << snake.size() << endl;
+        cout << "Length: " << snake.size() << "\n";
         SetColor(7);
-        cout << "Controls: W/A/S/D to move  |  X to quit" << endl;
+        cout << "Controls: W/A/S/D to move | X to quit\n";
     }
 
     bool IsGameOver() { return gameOver; }
@@ -197,44 +221,16 @@ public:
     void GameOverScreen() {
         system("cls");
         SetColor(12);
-        cout << "\n\n\n";
-        cout << "        +================================+\n";
-        cout << "        |        GAME OVER!              |\n";
-        cout << "        +================================+\n\n";
-        SetColor(11);
-        cout << "              Final Score: " << score << endl;
-        cout << "              Snake Length: " << snake.size() << endl;
-        SetColor(7);
-        cout << "\n\n        Press any key to exit...\n";
-        _getch();
-    }
-
-    void ShowStartScreen() {
-        system("cls");
-        SetColor(10);
         cout << "\n\n";
-        cout << "        +================================+\n";
-        cout << "        |      SNAKE GAME - C++          |\n";
-        cout << "        +================================+\n\n";
-        SetColor(14);
-        cout << "        Controls:\n";
-        SetColor(7);
-        cout << "        W - Move Up\n";
-        cout << "        S - Move Down\n";
-        cout << "        A - Move Left\n";
-        cout << "        D - Move Right\n";
-        cout << "        X - Quit Game\n\n";
-        SetColor(13);
-        cout << "        Eat the ";
-        SetColor(12);
-        cout << "@";
-        SetColor(13);
-        cout << " to grow and score!\n\n";
+        cout << "        ╔════════════════════════════╗\n";
+        cout << "        ║        💀 GAME OVER 💀      ║\n";
+        cout << "        ╚════════════════════════════╝\n\n";
         SetColor(11);
-        cout << "        Press any key to start...\n";
+        cout << "         Final Score: " << score << endl;
+        cout << "         Snake Length: " << snake.size() << endl;
         SetColor(7);
+        cout << "\nPress any key to exit...\n";
         _getch();
-        system("cls");
     }
 };
 
@@ -246,7 +242,7 @@ int main() {
         game.Input();
         game.Logic();
         game.Draw();
-        Sleep(100);
+        Sleep(150);
     }
 
     game.GameOverScreen();
