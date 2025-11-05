@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <string>
+#include <sstream>
 
 using namespace std;
 
@@ -33,8 +34,8 @@ private:
     time_t powerFruitStart;
     time_t bombStart;
 
-    vector<Point> obstacles;      // ✅ Hard mode obstacles
-    bool useObstacles = false;    // ✅ Enabled only in HARD
+    vector<Point> obstacles;
+    bool useObstacles = false;
 
     string playerName;
     string currentFruit;
@@ -49,12 +50,16 @@ private:
     int baseSpeed;
     int level;
 
+    // --- scoring feedback ---
+    string lastPointsMsg;
+    Point pointsMsgPos;  // Position of score message
+    time_t lastPointsTime;
+
     struct HighScoreEntry {
         string name;
         int score;
     } highScore;
 
-    // ---------- Console Utilities ----------
     void SetColor(int color) {
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
     }
@@ -73,7 +78,6 @@ private:
         SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
     }
 
-    // ---------- High Score ----------
     void LoadHighScore() {
         ifstream file("highscore.txt");
         if (file.is_open()) {
@@ -93,13 +97,10 @@ private:
         }
     }
 
-    // ---------- Obstacles (Hard mode only) ----------
     void GenerateObstacles() {
         if (!useObstacles) return;
-
         obstacles.clear();
-        int count = level + 3; // More obstacles each level
-
+        int count = level + 3;
         for (int i = 0; i < count; i++) {
             Point o;
             bool valid;
@@ -107,39 +108,30 @@ private:
                 valid = true;
                 o.x = rand() % WIDTH;
                 o.y = rand() % HEIGHT;
-
                 for (auto &s : snake)
                     if (s == o) valid = false;
                 if (fruit == o) valid = false;
                 if (powerFruitActive && powerFruit == o) valid = false;
                 if (bombActive && bomb == o) valid = false;
-
             } while (!valid);
-
             obstacles.push_back(o);
         }
     }
 
-    // ---------- Fruit ----------
     void GenerateFruit() {
         bool valid;
         do {
             valid = true;
             fruit.x = rand() % WIDTH;
             fruit.y = rand() % HEIGHT;
-
             for (auto &s : snake)
                 if (s == fruit) valid = false;
-
             if (powerFruitActive && fruit == powerFruit) valid = false;
             if (bombActive && fruit == bomb) valid = false;
-
             if (useObstacles)
                 for (auto &o : obstacles)
                     if (o == fruit) valid = false;
-
         } while (!valid);
-
         currentFruit = fruitSymbols[rand() % fruitSymbols.size()];
     }
 
@@ -149,74 +141,109 @@ private:
             valid = true;
             powerFruit.x = rand() % WIDTH;
             powerFruit.y = rand() % HEIGHT;
-
             for (auto &s : snake)
                 if (s == powerFruit) valid = false;
-
             if (fruit == powerFruit) valid = false;
             if (bombActive && bomb == powerFruit) valid = false;
-
             if (useObstacles)
                 for (auto &o : obstacles)
                     if (o == powerFruit) valid = false;
-
         } while (!valid);
-
         powerFruitActive = true;
         powerFruitStart = time(0);
-        Beep(1700, 150);
     }
 
-    // ---------- Bomb ----------
     void GenerateBomb() {
         bool valid;
         do {
             valid = true;
             bomb.x = rand() % WIDTH;
             bomb.y = rand() % HEIGHT;
-
             for (auto &s : snake)
                 if (s == bomb) valid = false;
             if (fruit == bomb) valid = false;
             if (powerFruitActive && bomb == powerFruit) valid = false;
-
             if (useObstacles)
                 for (auto &o : obstacles)
                     if (o == bomb) valid = false;
-
         } while (!valid);
-
         bombActive = true;
         bombStart = time(0);
     }
 
-    // ---------- Collision ----------
     bool CheckCollision(Point p) {
         if (p.x < 0 || p.x >= WIDTH || p.y < 0 || p.y >= HEIGHT)
             return true;
-
         for (size_t i = 1; i < snake.size(); i++)
             if (snake[i] == p)
                 return true;
-
         if (useObstacles)
             for (auto &o : obstacles)
                 if (o == p) return true;
-
         return false;
     }
 
-    // ---------- Level Progress ----------
     void LevelSystem() {
         int newLevel = score / 30 + 1;
         if (newLevel > level) {
             level = newLevel;
-            Beep(1200, 120);
-            Beep(1500, 120);
-
             if (useObstacles)
                 GenerateObstacles();
         }
+    }
+
+    static bool IsOpposite(Direction a, Direction b) {
+        return (a == LEFT && b == RIGHT) || (a == RIGHT && b == LEFT) ||
+               (a == UP && b == DOWN) || (a == DOWN && b == UP);
+    }
+
+    // 📘 RULEBOOK SCREEN
+    void ShowRules() {
+        system("cls");
+        SetColor(11);
+        cout << "\n\n📘  GAME RULEBOOK - ADVANCED SNAKE 🐍\n";
+        SetColor(7);
+        cout << "────────────────────────────────────────────\n\n";
+        SetColor(14);
+        cout << "🎯 OBJECTIVE:\n";
+        SetColor(7);
+        cout << "Grow your snake by eating fruits and survive as long as possible!\n\n";
+
+        SetColor(14);
+        cout << "🍎 FRUITS:\n";
+        SetColor(7);
+        cout << "  - Regular fruits give +10 points.\n";
+        cout << "  - Power fruits ⭐ appear randomly and give +50 points.\n\n";
+
+        SetColor(14);
+        cout << "💣 BOMBS:\n";
+        SetColor(7);
+        cout << "  - Avoid them! Touching a bomb ends the game immediately.\n\n";
+
+        SetColor(14);
+        cout << "🧱 OBSTACLES (Hard Mode only):\n";
+        SetColor(7);
+        cout << "  - Static blocks appear as you level up.\n";
+        cout << "  - Colliding with one causes instant death.\n\n";
+
+        SetColor(14);
+        cout << "🕹️ CONTROLS:\n";
+        SetColor(7);
+        cout << "  → Arrow Keys  - Move the snake\n";
+        cout << "  → P           - Pause/Resume\n";
+        cout << "  → X           - Quit the game\n\n";
+
+        SetColor(14);
+        cout << "💡 TIPS:\n";
+        SetColor(7);
+        cout << "  - The snake moves faster as it grows and levels up.\n";
+        cout << "  - You can't reverse direction instantly (for safety).\n";
+        cout << "  - High scores are saved automatically.\n\n";
+
+        SetColor(10);
+        cout << "Press any key to continue to difficulty selection...";
+        _getch();
+        system("cls");
     }
 
 public:
@@ -227,21 +254,44 @@ public:
         cout << "Enter your name: ";
         cin >> playerName;
 
-        cout << "\nSelect Difficulty:\n";
-        cout << "1. Easy\n2. Medium\n3. Hard (with Obstacles)\nChoice: ";
-        int d;
-        cin >> d;
+        // 👋 Personalized rule book message
+        char choice;
+        cout << "\nHello " << playerName << ", before starting to play the game,\n";
+        cout << "do you want to read the rules for this game? (Y/N): ";
+        cin >> choice;
+        if (choice == 'Y' || choice == 'y') {
+            ShowRules();
+        } else {
+            system("cls");
+        }
 
-        if (d == 1) baseSpeed = 150;
-        else if (d == 2) baseSpeed = 110;
-        else {
-            baseSpeed = 80;
-            useObstacles = true; // ✅ Only HARD gets obstacles
+        int d;
+        while (true) {
+            cout << "\nSelect Difficulty:\n";
+            cout << "1. Easy\n2. Medium\n3. Hard (with Obstacles)\nChoice: ";
+            cin >> d;
+
+            if (cin.fail()) {
+                cin.clear();
+                cin.ignore(1000, '\n');
+                SetColor(12);
+                cout << "\n⚠️  Invalid input! Please enter 1, 2, or 3.\n\n";
+                SetColor(7);
+                continue;
+            }
+
+            if (d == 1) { baseSpeed = 150; break; }
+            else if (d == 2) { baseSpeed = 110; break; }
+            else if (d == 3) { baseSpeed = 80; useObstacles = true; break; }
+            else {
+                SetColor(12);
+                cout << "\n⚠️  Invalid choice! Please enter 1, 2, or 3.\n\n";
+                SetColor(7);
+            }
         }
 
         snake.clear();
         snake.push_back({WIDTH / 2, HEIGHT / 2});
-
         dir = STOP;
         score = 0;
         gameOver = false;
@@ -250,15 +300,17 @@ public:
         level = 1;
         bombActive = false;
         powerFruitActive = false;
+        lastPointsMsg = "";
+        lastPointsTime = 0;
+        pointsMsgPos = {-1, -1};
 
         LoadHighScore();
         GenerateFruit();
         GenerateBomb();
-        GenerateObstacles(); // ✅ Only active in Hard
+        GenerateObstacles();
         HideCursor();
     }
 
-    // ---------- Start Screen ----------
     void ShowStartScreen() {
         system("cls");
         SetColor(10);
@@ -266,7 +318,7 @@ public:
         SetColor(14);
         cout << "Controls:\n";
         SetColor(7);
-        cout << " W/A/S/D - Move\n";
+        cout << " Arrow Keys - Move\n";
         cout << " P - Pause/Resume\n";
         cout << " X - Quit Game\n\n";
         SetColor(11);
@@ -277,37 +329,38 @@ public:
         system("cls");
     }
 
-    // ---------- Input ----------
     void Input() {
         if (_kbhit()) {
-            char key = _getch();
-            if (!paused) {
-                if (key == 'w' || key == 'W') dir = UP;
-                if (key == 's' || key == 'S') dir = DOWN;
-                if (key == 'a' || key == 'A') dir = LEFT;
-                if (key == 'd' || key == 'D') dir = RIGHT;
+            int k = _getch();
+            if (!paused && (k == 224 || k == 0)) {
+                int arrow = _getch();
+                Direction next = dir;
+                switch (arrow) {
+                    case 72: next = UP; break;
+                    case 80: next = DOWN; break;
+                    case 75: next = LEFT; break;
+                    case 77: next = RIGHT; break;
+                }
+                if (!(snake.size() > 1 && IsOpposite(dir, next))) dir = next;
             }
-            if (key == 'p' || key == 'P') paused = !paused;
-            if (key == 'x' || key == 'X') gameOver = true;
+            if (k == 'p' || k == 'P') paused = !paused;
+            if (k == 'x' || k == 'X') gameOver = true;
         }
     }
 
-    // ---------- Logic ----------
     void Logic() {
         if (paused || dir == STOP) return;
 
         Point newHead = snake[0];
         switch (dir) {
-            case LEFT: newHead.x--; break;
+            case LEFT:  newHead.x--; break;
             case RIGHT: newHead.x++; break;
-            case UP: newHead.y--; break;
-            case DOWN: newHead.y++; break;
+            case UP:    newHead.y--; break;
+            case DOWN:  newHead.y++; break;
+            default: break;
         }
 
         if (CheckCollision(newHead)) {
-            Beep(600, 200);
-            Beep(400, 200);
-            Beep(250, 300);
             gameOver = true;
             return;
         }
@@ -316,19 +369,19 @@ public:
 
         if (newHead == fruit) {
             score += 10;
-            Beep(1000, 80);
-            Beep(1200, 80);
+            lastPointsMsg = "+10";
+            lastPointsTime = time(0);
+            pointsMsgPos = fruit;
+            if (pointsMsgPos.x < WIDTH - 1) pointsMsgPos.x++;
             GenerateFruit();
-        }
-        else if (powerFruitActive && newHead == powerFruit) {
+        } else if (powerFruitActive && newHead == powerFruit) {
             score += 50;
+            lastPointsMsg = "+50";
+            lastPointsTime = time(0);
+            pointsMsgPos = powerFruit;
+            if (pointsMsgPos.x < WIDTH - 1) pointsMsgPos.x++;
             powerFruitActive = false;
-            Beep(1600, 200);
-            Beep(1900, 200);
-        }
-        else {
-            snake.pop_back();
-        }
+        } else snake.pop_back();
 
         if (!powerFruitActive && rand() % 70 == 0)
             GeneratePowerFruit();
@@ -337,9 +390,6 @@ public:
             powerFruitActive = false;
 
         if (bombActive && newHead == bomb) {
-            Beep(300, 200);
-            Beep(200, 200);
-            Beep(100, 300);
             gameOver = true;
             return;
         }
@@ -352,9 +402,18 @@ public:
         LevelSystem();
     }
 
-    // ---------- Draw ----------
     void Draw() {
         SetCursorPosition(0, 0);
+
+        // 🟦 Live Scoreboard at top
+        SetColor(11);
+        cout << "Player: " << playerName
+             << "  |  Score: " << score
+             << "  |  Length: " << snake.size()
+             << "  |  Level: " << level
+             << "  |  High Score: " << highScore.score
+             << "\n";
+
         SetColor(14);
         cout << "╔";
         for (int i = 0; i < WIDTH; i++) cout << "══";
@@ -365,7 +424,6 @@ public:
             cout << "║";
             for (int x = 0; x < WIDTH; x++) {
                 Point current = {x, y};
-
                 bool isHead = (snake[0] == current);
                 bool isBody = false;
                 for (size_t i = 1; i < snake.size(); i++)
@@ -377,12 +435,16 @@ public:
                     for (auto &o : obstacles)
                         if (o == current) isObs = true;
 
+                bool isMsg = (!lastPointsMsg.empty() && difftime(time(0), lastPointsTime) < 2 &&
+                              current == pointsMsgPos);
+
                 if (isHead) { SetColor(10); cout << "🟩"; }
                 else if (isBody) { SetColor(2); cout << "🟢"; }
                 else if (isObs) { SetColor(5); cout << "▩ "; }
                 else if (current == fruit) { SetColor(12); cout << currentFruit; }
                 else if (powerFruitActive && current == powerFruit) { SetColor(11); cout << "⭐"; }
                 else if (bombActive && current == bomb) { SetColor(4); cout << "💣"; }
+                else if (isMsg) { SetColor(9); cout << lastPointsMsg; } // Blue message
                 else { SetColor(7); cout << "  "; }
             }
             SetColor(14);
@@ -394,19 +456,15 @@ public:
         for (int i = 0; i < WIDTH; i++) cout << "══";
         cout << "╝\n";
 
-        SetColor(11);
-        cout << "Player: " << playerName
-             << "   Score: " << score
-             << "   Length: " << snake.size()
-             << "   Level: " << level << "\n";
-        cout << "High Score: " << highScore.name << " - " << highScore.score << "\n";
-        cout << "Controls: W/A/S/D Move | P Pause | X Quit\n";
+        SetColor(8);
+        cout << "Controls: Arrow Keys | P Pause | X Quit\n";
+
+        if (difftime(time(0), lastPointsTime) >= 2) lastPointsMsg = "";
     }
 
     bool IsGameOver() { return gameOver; }
     bool ShouldRetry() { return retry; }
 
-    // ---------- Game Over ----------
     void GameOverScreen() {
         system("cls");
         SetColor(12);
@@ -416,11 +474,10 @@ public:
         cout << "Snake Length: " << snake.size() << endl;
 
         if (score > highScore.score) {
-            cout << "🎉 New High Score! 🎉\n";
             SaveHighScore();
-            Beep(1000, 120);
-            Beep(1300, 120);
-            Beep(1600, 200);
+            SetColor(10);
+            cout << "\n🎉 New High Score by " << playerName
+                 << "! 🎉 (" << score << " points)\n";
         }
 
         SetColor(13);
@@ -430,12 +487,11 @@ public:
     }
 
     int GetSpeedDelay() {
-        int speed = baseSpeed - (snake.size() * 2) - (level * 5);
+        int speed = baseSpeed - (int)snake.size() * 2 - level * 5;
         return max(50, speed);
     }
 };
 
-// ---------- Main ----------
 int main() {
     while (true) {
         SnakeGame game;
@@ -451,6 +507,5 @@ int main() {
         game.GameOverScreen();
         if (!game.ShouldRetry()) break;
     }
-
     return 0;
 }
