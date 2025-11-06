@@ -1,4 +1,4 @@
-// ===== Advanced Snake (Neon Theme — Final Stable Version) =====
+// ===== Advanced Snake (Neon Theme — Final Polished + Retry Rulebook Integrated on Difficulty Page) =====
 #include <iostream>
 #include <conio.h>
 #include <windows.h>
@@ -15,7 +15,7 @@ using namespace std;
 int WIDTH = 30, HEIGHT = 15;
 
 enum Direction { STOP=0, LEFT, RIGHT, UP, DOWN };
-struct Point { int x,y; };
+struct Point { int x, y; };
 bool operator==(const Point&a,const Point&b){ return a.x==b.x && a.y==b.y; }
 
 class SnakeGame {
@@ -131,18 +131,31 @@ private:
         return (a==LEFT&&b==RIGHT)||(a==RIGHT&&b==LEFT)||(a==UP&&b==DOWN)||(a==DOWN&&b==UP);
     }
 
-    // === UI Sections ===
+    // === Rulebook ===
     void ShowRules(){
         system("cls");
         SetColor(13); cout << "\n\n      📘 ADVANCED SNAKE — RULEBOOK\n\n";
         SetColor(7);
-        cout << "───────────────────────────────────────────\n";
-        cout << "🎯 Eat fruits to grow, avoid bombs & walls.\n";
-        cout << "⭐ Power Fruits: +50 pts  |  🍎 Normal: +10\n";
-        cout << "💣 Bomb = Instant Game Over\n";
-        cout << "🕹 Arrows to Move, P to Pause, X to Quit\n";
-        cout << "───────────────────────────────────────────\n\n";
-        SetColor(10); cout << "Press any key to continue..."; _getch();
+        cout << " ───────────────────────────────────────────\n";
+        SetColor(14); cout << " 🎯 Objective\n"; SetColor(7);
+        cout << "   • Eat fruits to grow and score points.\n\n";
+        SetColor(14); cout << " 🍎 Fruits\n"; SetColor(7);
+        cout << "   • Regular fruits: +10 points.\n";
+        cout << "   • Power ⭐ fruits: +50 points, appear randomly (5s).\n\n";
+        SetColor(14); cout << " 💣 Bombs\n"; SetColor(7);
+        cout << "   • Touching a bomb ends the game instantly.\n\n";
+        SetColor(14); cout << " 🧱 Obstacles (Hard Mode)\n"; SetColor(7);
+        cout << "   • Static blocks appear from Level 2 onwards.\n";
+        cout << "   • Colliding with one = game over.\n\n";
+        SetColor(14); cout << " 🕹 Controls\n"; SetColor(7);
+        cout << "   • Arrow Keys: Move the snake\n";
+        cout << "   • P: Pause/Resume\n";
+        cout << "   • X: Quit game anytime\n\n";
+        SetColor(14); cout << " 💡 Tips\n"; SetColor(7);
+        cout << "   • Speed increases with level and length.\n";
+        cout << "   • You can’t instantly reverse direction.\n";
+        cout << " ───────────────────────────────────────────\n\n";
+        SetColor(10); cout << " Press any key to continue..."; _getch();
         system("cls");
     }
 
@@ -159,7 +172,6 @@ private:
         double pLeft = powerFruitActive ? 5 - difftime(time(0), powerFruitStart) : 0;
         double bLeft = bombActive  ? 5 - difftime(time(0), bombStart) : 0;
         int W = 24;
-
         if (powerFruitActive){
             SetColor(11); cout << "⭐ Power: [";
             int fill = max(0,(int)((pLeft/5.0)*W));
@@ -174,44 +186,56 @@ private:
         }
     }
 
-    void NeonBanner(){
-        SetColor(13); cout << "╔"; for(int i=0;i<WIDTH;i++) cout<<"══"; cout<<"╗\n";
-    }
-    void NeonFooter(){
-        SetColor(13); cout << "╚"; for(int i=0;i<WIDTH;i++) cout<<"══"; cout<<"╝\n";
-    }
+    void NeonBanner(){ SetColor(13); cout << "╔"; for(int i=0;i<WIDTH;i++) cout<<"══"; cout<<"╗\n"; }
+    void NeonFooter(){ SetColor(13); cout << "╚"; for(int i=0;i<WIDTH;i++) cout<<"══"; cout<<"╝\n"; }
 
 public:
-    SnakeGame(){
+    SnakeGame(string name, bool showInitialRules=true){
         SetConsoleOutputCP(65001);
         srand((unsigned)time(0));
         HideCursor();
 
-        cout << "Enter your name: ";
-        cin.clear();
-        if (cin.peek() == '\n') cin.ignore();
-        getline(cin, playerName);
+        playerName = name;
 
-        char ch;
-        while(true){
-            SetColor(9);
-            cout << "\nHello " << playerName << ", do you want to read the rules? (Y/N): ";
-            SetColor(7);
-            cin >> ch;
-            if (ch=='Y'||ch=='y'){ ShowRules(); break; }
-            else if (ch=='N'||ch=='n'){ system("cls"); break; }
-            else { SetColor(12); cout << "Invalid! Try again.\n"; SetColor(7); }
+        if (showInitialRules) {
+            char ch;
+            while(true){
+                SetColor(9);
+                cout << "\nHello " << playerName << ", before starting the game,\n";
+                cout << "do you want to read the rules? (Y/N): ";
+                SetColor(7);
+                cin >> ch;
+                if (ch=='Y'||ch=='y'){ ShowRules(); break; }
+                else if (ch=='N'||ch=='n'){ system("cls"); break; }
+                else { SetColor(12); cout << "Invalid! Please enter Y or N.\n"; SetColor(7); }
+            }
         }
 
         int d;
         while(true){
             cout << "\nSelect Difficulty:\n";
-            cout << " 1) Easy   2) Medium   3) Hard (with Obstacles)\nChoice: ";
+            cout << "  1) Easy    2) Medium    3) Hard (with Obstacles)\n";
+            cout << "Choice: ";
+            cin.clear();
             cin >> d;
             if (cin.fail()){ cin.clear(); cin.ignore(1000,'\n'); continue; }
             if (d==1){ baseSpeed=150; break; }
             if (d==2){ baseSpeed=110; break; }
             if (d==3){ baseSpeed=80;  useObstacles=true; break; }
+            else { SetColor(12); cout << "Invalid! Please enter 1, 2, or 3.\n"; SetColor(7); }
+        }
+
+        // If game is restarted (not first play), show Press B/S message here
+        if (!showInitialRules) {
+            cout << "\n──────────────────────────────────────────────\n";
+            SetColor(11);
+            cout << "   Press B to read the Rulebook\n";
+            cout << "   or Press S to Start the Game\n";
+            SetColor(7);
+            cout << "──────────────────────────────────────────────\n";
+            char c=_getch();
+            if (c=='B'||c=='b'){ ShowRules(); }
+            system("cls");
         }
 
         snake.clear(); snake.push_back({WIDTH/2, HEIGHT/2});
@@ -259,9 +283,7 @@ public:
         } else if (powerFruitActive && nh==powerFruit){
             score+=50; lastPointsMsg="+50"; lastPointsTime=time(0);
             powerFruitActive=false;
-        } else {
-            snake.pop_back();
-        }
+        } else { snake.pop_back(); }
 
         if (!powerFruitActive && rand()%70==0) GeneratePowerFruit();
         if (powerFruitActive && difftime(time(0),powerFruitStart)>=5) powerFruitActive=false;
@@ -272,26 +294,27 @@ public:
         LevelSystem();
     }
 
-    void Draw(){
-        SetCursorPosition(0,0); // overwrite previous frame, prevents stacking
+    void Draw() {
+        SetCursorPosition(0, 0);
         Header();
-
-        // Popup score above board
-        if (!lastPointsMsg.empty() && difftime(time(0), lastPointsTime) < 2) {
+        double msgDuration = difftime(time(0), lastPointsTime);
+        if (!lastPointsMsg.empty() && msgDuration < 1.0) {
             SetColor(10);
             cout << "\n   " << lastPointsMsg << "!\n";
             SetColor(7);
-        } else cout << "\n\n";
+        } else {
+            cout << "\n\n";
+            lastPointsMsg = "";
+        }
 
         NeonBanner();
-        for (int y=0;y<HEIGHT;y++){
-            SetColor(13); cout<<"║";
-            for (int x=0;x<WIDTH;x++){
-                Point c{x,y};
+        for (int y = 0; y < HEIGHT; y++) {
+            SetColor(13); cout << "║";
+            for (int x = 0; x < WIDTH; x++) {
+                Point c{ x, y };
                 bool isHead = (snake[0]==c);
                 bool isBody=false; for(size_t i=1;i<snake.size();++i) if(snake[i]==c) isBody=true;
                 bool isObs=false; if(useObstacles) for(auto&o:obstacles) if(o==c) isObs=true;
-
                 if (isHead){ SetColor(10); cout<<"🟩"; }
                 else if (isBody){ SetColor(2); cout<<"🟢"; }
                 else if (isObs){ SetColor(5); cout<<"▩ "; }
@@ -303,13 +326,11 @@ public:
             SetColor(13); cout<<"║\n";
         }
         NeonFooter();
-
-        // Move the cursor below the board (fixed to prevent repetition)
-        cout << "\033[K"; 
+        cout << "\033[K";
         DrawBars();
-        SetColor(8); cout << "Controls: Arrow Keys | P Pause | X Quit\n";
-        cout << "\033[K"; // clear line
-        if (difftime(time(0),lastPointsTime)>=2) lastPointsMsg="";
+        SetColor(8);
+        cout << "Controls: Arrow Keys | P Pause | X Quit\n";
+        cout << "\033[K";
     }
 
     bool IsGameOver(){ return gameOver; }
@@ -318,9 +339,12 @@ public:
     void GameOverScreen(){
         system("cls");
         SetColor(12); cout << "\n\n       💀 GAME OVER 💀\n\n";
-        SetColor(11); cout << "Final Score: " << score << "\nSnake Length: " << snake.size() << "\n";
-        if (score>highScore.score){ SaveHighScore(); SetColor(10); cout << "\n🎉 New High Score by " << playerName << " ("<<score<<")\n"; }
-        SetColor(13); cout << "\nPress R to Retry or any other key to Exit...\n";
+        SetColor(11); cout << "Final Score: " << score << "\nSnake Length: " << snake.size()
+             << "\nHigh Score: " << highScore.score << "\n\n";
+        if (score>highScore.score){ SaveHighScore(); SetColor(10);
+            cout << "\n🎉 New High Score by " << playerName << " ("<<score<<")\n"; }
+        SetColor(13);
+        cout << "\nPress R to Retry or any other key to Exit...\n";
         char c=_getch(); retry=(c=='r'||c=='R');
     }
 
@@ -331,8 +355,16 @@ public:
 };
 
 int main(){
+    SetConsoleOutputCP(65001);
+    string name;
+    cout << "Enter your name: ";
+    getline(cin, name);
+
+    bool firstPlay = true;
     while (true){
-        SnakeGame game;
+        SnakeGame game(name, firstPlay);
+        firstPlay = false;
+
         game.ShowStartScreen();
         while (!game.IsGameOver()){
             game.Input();
