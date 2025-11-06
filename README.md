@@ -26,7 +26,7 @@
 ## 🧩 Game Preview
 
 ```text
-Player: Nigam | Score: 90 | Length: 15 | Level: 3 | High: 200
+Player: Player_name | Score: 90 | Length: 15 | Level: 3 | High: 200
 ═════════════════════════════════════════════════════════
 🐍🐍🐍🍒🧱🧱🧱💣
 ...
@@ -34,11 +34,12 @@ Player: Nigam | Score: 90 | Length: 15 | Level: 3 | High: 200
 Power Fruit: [#####]     Bomb: [###  ]
 🐍 Tip: The longer your snake grows, the faster it moves!
 
+
 🎯 Objective
 The goal is simple:
-
 Eat fruits, grow longer, and survive as long as you can!
 But beware of bombs, walls, and your own tail 👀
+
 
 🧠 How to Play
 Key	Action
@@ -48,29 +49,32 @@ X	Exit game
 R	Retry after Game Over
 Enter	Confirm selection
 
+
 ⚙️ Setup & Run
 🪟 For Windows Users:
 Clone the Repository
-
+--------------------------------------------------------------
 bash
 Copy code
 git clone https://github.com/your-username/snake-game-cpp.git
 Open the Project Folder
-
+--------------------------------------------------------------
 bash
 Copy code
 cd snake-game-cpp
 Compile the Code
-
+--------------------------------------------------------------
 bash
 Copy code
 g++ snake.cpp -o snake.exe
 Run the Game
-
+--------------------------------------------------------------
 bash
 Copy code
 snake.exe
 ✅ Make sure your console supports UTF-8 encoding and color output for best visuals!
+--------------------------------------------------------------
+
 
 🏗️ Project Structure
 css
@@ -79,44 +83,38 @@ Copy code
  ┣ 📜 snake.cpp          → Main source file
  ┣ 📜 highscore.txt      → Stores your highest score (auto-created)
  ┣ 📜 README.md          → You’re reading it right now 😄
-🎮 Difficulty Levels
-Mode	Description	Speed	Obstacles
-🟢 Easy	Relaxed and beginner-friendly	🐢 Slow	❌ No
-🟡 Medium	Balanced gameplay	⚙️ Normal	❌ No
-🔴 Hard	For pros only	🚀 Fast	✅ Yes
 
+
+🎮 Difficulty Levels
+Mode	            Description	                 Speed	    Obstacles
+ 1     Easy	Relaxed and beginner-friendly	  🐢 Slow	     ❌ No
+ 2     Medium	Balanced gameplay	            ⚙️ Normal	   ❌ No
+ 3     Hard	For pros only	                  🚀 Fast	     ✅ Yes
 💡 Higher levels unlock automatically as your score increases.
+
 
 🧠 Game Mechanics
 The core game loop is simple but efficient:
-
-arduino
-Copy code
 INPUT → LOGIC → DRAW → SLEEP → REPEAT
 Input() – Handles real-time keyboard input
-
 Logic() – Updates snake, collisions, and scoring
-
 Draw() – Renders the board and stats
-
 Sleep() – Controls game speed
 
+
 🎯 The speed is dynamic — it increases as:
-
 Your snake grows
-
 Your level increases
+
 
 💾 High Score System
 🏆 Your best performance never gets lost!
-
 Stored automatically in highscore.txt
-
 Updates instantly when you beat your previous score
-
 Displayed on the home screen every time you launch the game
 
-🧩 Concepts Used
+
+🧩 Concepts Used :
 Concept	Description
 🧱 Object-Oriented Programming	Encapsulates all game logic inside a class
 🕹️ Real-Time Input Handling	Using _kbhit() and _getch()
@@ -126,24 +124,21 @@ Concept	Description
 ⏱️ Timers & Randomization	For spawning power fruits and bombs
 💾 File Handling	Saves high scores using fstream
 
-💡 Future Enhancements
+
+💡 Future Enhancements : 
 🚀 Planned or suggested improvements:
-
 🎵 Add sound effects or music
-
 🧑‍🤝‍🧑 Multiplayer mode
-
 🌐 Online leaderboards
-
 🧩 Custom skins and emojis
 
-🕹️ Save & resume feature
 
-👨‍💻 Developer
-👋 Nigam Sanghvi
-💻 Computer Science Student | Game Developer | Tech Enthusiast
-📧 your-email@example.com
-🌐 GitHub Profile
+👨‍💻 Developers :
+    202512024 - Heer Shah 
+    202512025 - Diya Shah
+    202512031 - Nigam Sanghvi
+    202512059 - Jay Shah
+
 
 🏁 Final Words
 This Snake Game is not just about coding — it’s about creativity, logic, and fun 🐍💡
