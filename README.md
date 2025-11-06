@@ -126,7 +126,7 @@ Concept	Description
 
 
 💡 Future Enhancements : 
-🚀 Planned or suggested improvements:
+🚀 Planned or suggested improvements
 🎵 Add sound effects or music
 🧑‍🤝‍🧑 Multiplayer mode
 🌐 Online leaderboards
