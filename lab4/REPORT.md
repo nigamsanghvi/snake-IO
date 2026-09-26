@@ -35,3 +35,13 @@ Since no tests could be written, technically no rules run. However, if we bypass
 - **Rule:** The snake dies if its head moves out of the bounds of the game board (Rule 1).
 - **Line:** `Snake.cpp:121` (`if (p.x<0 || p.x>=WIDTH || p.y<0 || p.y>=HEIGHT) return true;`) inside `CheckCollision()`.
 - **Missing assertion:** When testing fruit eating, this line runs continuously to verify the snake is safe, but the test suite would be missing an `assert(!game.IsGameOver())` or `EXPECT_FALSE(game.IsGameOver())` on every single tick, completely taking it for granted.
+## Part D: Refactoring and Testing (Rule 3)
+
+I chose to make **Rule 3** testable: *Eating a regular fruit increases score by 10 and length by one.*
+To achieve this, I broke the dependency on and() and _getch() by introducing two seams: IRandomSource and IInputSource. These interfaces are injected into the constructor of SnakeGame, allowing my test file to use a DeterministicFakeRandomSource and FakeInputSource.
+
+| Commit SHA | Commit Message | Files Modified | Nature of Changes |
+| :--- | :--- | :--- | :--- |
+| **`df9ca40`** | `refactor: add seams to bypass cin and rand for rule 3` | `Snake.cpp` | **Production seam only.** Added `IRandomSource` and `IInputSource`, injected them, and made state public. No tests added. |
+| **`2299f3b`** | `test: add unit test for rule 3` | `test.cpp`, `lab4/REPORT.md` | **Tests only.** Unit tests asserting score and length increases. No production source changes. |
+
