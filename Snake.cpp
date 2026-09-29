@@ -18,8 +18,39 @@ enum Direction { STOP=0, LEFT, RIGHT, UP, DOWN };
 struct Point { int x, y; };
 bool operator==(const Point&a,const Point&b){ return a.x==b.x && a.y==b.y; }
 
+class IRandomSource {
+public:
+    virtual ~IRandomSource() = default;
+    virtual int getInt(int minVal, int maxVal) = 0;
+};
+
+class StandardRandomSource : public IRandomSource {
+public:
+    int getInt(int minVal, int maxVal) override {
+        return minVal + rand() % (maxVal - minVal + 1);
+    }
+};
+
+class IInputSource {
+public:
+    virtual ~IInputSource() = default;
+    virtual bool kbhit() = 0;
+    virtual int getch() = 0;
+};
+
+class StandardInputSource : public IInputSource {
+public:
+    bool kbhit() override { return _kbhit(); }
+    int getch() override { return _getch(); }
+};
+
 class SnakeGame {
-private:
+public:
+    IRandomSource* rng;
+    StandardRandomSource defaultRng;
+    IInputSource* input;
+    StandardInputSource defaultInput;
+
     vector<Point> snake;
     Point fruit, powerFruit, bomb;
     bool powerFruitActive=false, bombActive=false;
@@ -70,7 +101,7 @@ private:
             Point o; bool ok;
             do{
                 ok=true;
-                o.x = rand()%WIDTH; o.y=rand()%HEIGHT;
+                o.x = rng->getInt(0, WIDTH-1); o.y = rng->getInt(0, HEIGHT-1);
                 for (auto&s:snake) if (s==o) ok=false;
                 if (fruit==o) ok=false;
                 if (powerFruitActive && powerFruit==o) ok=false;
@@ -83,19 +114,19 @@ private:
         bool ok;
         do{
             ok=true;
-            fruit.x=rand()%WIDTH; fruit.y=rand()%HEIGHT;
+            fruit.x=rng->getInt(0, WIDTH-1); fruit.y=rng->getInt(0, HEIGHT-1);
             for (auto&s:snake) if (s==fruit) ok=false;
             if (powerFruitActive && fruit==powerFruit) ok=false;
             if (bombActive && fruit==bomb) ok=false;
             if (useObstacles) for (auto&o:obstacles) if (o==fruit) ok=false;
         }while(!ok);
-        currentFruit = fruitSymbols[rand()%fruitSymbols.size()];
+        currentFruit = fruitSymbols[rng->getInt(0, fruitSymbols.size()-1)];
     }
     void GeneratePowerFruit(){
         bool ok;
         do{
             ok=true;
-            powerFruit.x=rand()%WIDTH; powerFruit.y=rand()%HEIGHT;
+            powerFruit.x=rng->getInt(0, WIDTH-1); powerFruit.y=rng->getInt(0, HEIGHT-1);
             for (auto&s:snake) if (s==powerFruit) ok=false;
             if (fruit==powerFruit) ok=false;
             if (bombActive && bomb==powerFruit) ok=false;
@@ -107,7 +138,7 @@ private:
         bool ok;
         do{
             ok=true;
-            bomb.x=rand()%WIDTH; bomb.y=rand()%HEIGHT;
+            bomb.x=rng->getInt(0, WIDTH-1); bomb.y=rng->getInt(0, HEIGHT-1);
             for (auto&s:snake) if (s==bomb) ok=false;
             if (fruit==bomb) ok=false;
             if (powerFruitActive && bomb==powerFruit) ok=false;
@@ -155,7 +186,7 @@ private:
         cout << "   • Speed increases with level and length.\n";
         cout << "   • You can’t instantly reverse direction.\n";
         cout << " ───────────────────────────────────────────\n\n";
-        SetColor(10); cout << " Press any key to continue..."; _getch();
+        SetColor(10); cout << " Press any key to continue..."; input->getch();
         system("cls");
     }
 
@@ -190,13 +221,24 @@ private:
     void NeonFooter(){ SetColor(13); cout << "╚"; for(int i=0;i<WIDTH;i++) cout<<"══"; cout<<"╝\n"; }
 
 public:
-    SnakeGame(string name, bool showInitialRules=true){
+    SnakeGame(string name, IRandomSource* customRng = nullptr, IInputSource* customInput = nullptr){
+        rng = customRng ? customRng : &defaultRng;
+        input = customInput ? customInput : &defaultInput;
         SetConsoleOutputCP(65001);
         srand((unsigned)time(0));
         HideCursor();
 
         playerName = name;
+        snake.clear(); snake.push_back({WIDTH/2, HEIGHT/2});
+        dir=STOP; score=0; level=1; bombActive=false; powerFruitActive=false;
+        lastPointsMsg=""; lastPointsTime=0;
 
+        LoadHighScore();
+        GenerateFruit(); GenerateBomb(); GenerateObstacles();
+        system("cls");
+    }
+
+    void RunMenu(bool showInitialRules) {
         if (showInitialRules) {
             char ch;
             while(true){
@@ -225,7 +267,6 @@ public:
             else { SetColor(12); cout << "Invalid! Please enter 1, 2, or 3.\n"; SetColor(7); }
         }
 
-        // If game is restarted (not first play), show Press B/S message here
         if (!showInitialRules) {
             cout << "\n──────────────────────────────────────────────\n";
             SetColor(11);
@@ -233,18 +274,10 @@ public:
             cout << "   or Press S to Start the Game\n";
             SetColor(7);
             cout << "──────────────────────────────────────────────\n";
-            char c=_getch();
+            char c = input->getch();
             if (c=='B'||c=='b'){ ShowRules(); }
             system("cls");
         }
-
-        snake.clear(); snake.push_back({WIDTH/2, HEIGHT/2});
-        dir=STOP; score=0; level=1; bombActive=false; powerFruitActive=false;
-        lastPointsMsg=""; lastPointsTime=0;
-
-        LoadHighScore();
-        GenerateFruit(); GenerateBomb(); GenerateObstacles();
-        system("cls");
     }
 
     void ShowStartScreen(){
@@ -252,15 +285,15 @@ public:
         SetColor(11);
         cout << "\n   Arrow Keys = Move  |  P Pause  |  X Quit\n\n";
         cout << "   High Score: " << highScore.name << " - " << highScore.score << "\n\n";
-        SetColor(10); cout << "   Press any key to start..."; _getch();
+        SetColor(10); cout << "   Press any key to start..."; input->getch();
         system("cls");
     }
 
     void Input(){
-        if (_kbhit()){
-            int k=_getch();
+        if (input->kbhit()){
+            int k=input->getch();
             if (!paused && (k==224 || k==0)){
-                int a=_getch(); Direction next=dir;
+                int a=input->getch(); Direction next=dir;
                 if (a==72) next=UP; if (a==80) next=DOWN; if (a==75) next=LEFT; if (a==77) next=RIGHT;
                 if (!(snake.size()>1 && IsOpposite(dir,next))) dir=next;
             }
@@ -285,7 +318,7 @@ public:
             powerFruitActive=false;
         } else { snake.pop_back(); }
 
-        if (!powerFruitActive && rand()%70==0) GeneratePowerFruit();
+        if (!powerFruitActive && rng->getInt(0, 69)==0) GeneratePowerFruit();
         if (powerFruitActive && difftime(time(0),powerFruitStart)>=5) powerFruitActive=false;
 
         if (bombActive && nh==bomb){ gameOver=true; return; }
@@ -345,7 +378,7 @@ public:
             cout << "\n🎉 New High Score by " << playerName << " ("<<score<<")\n"; }
         SetColor(13);
         cout << "\nPress R to Retry or any other key to Exit...\n";
-        char c=_getch(); retry=(c=='r'||c=='R');
+        char c=input->getch(); retry=(c=='r'||c=='R');
     }
 
     int GetSpeedDelay(){
@@ -362,7 +395,8 @@ int main(){
 
     bool firstPlay = true;
     while (true){
-        SnakeGame game(name, firstPlay);
+        SnakeGame game(name);
+        game.RunMenu(firstPlay);
         firstPlay = false;
 
         game.ShowStartScreen();
